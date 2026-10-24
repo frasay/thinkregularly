@@ -1,86 +1,100 @@
 # think regularly
 
-A single-page retro typewriter writing app. No accounts, no server, no tracking — everything lives in your browser's `localStorage`, and it works offline once installed.
+A single-page, offline-first **retro typewriter writing app**. One HTML file, no build step, no accounts, no tracking. Your writing lives in your browser (and in the `.txt` files you export).
 
-**v2.1**
+**Version 2.1**
 
 ---
 
 ## What's new in v2.1
 
-| Feature | Notes |
-|---|---|
-| **Paged writing view** | Stacked A4-proportioned sheets. Text flows down the page; a new sheet appears only once the current one is full. Page numbers sit centred at the foot of each sheet as `— 1 —`, with a `PAGE x / y` readout in the status bar. |
-| **Caret-follow scrolling** | The line you are typing is always visible. As each new line starts the view eases upward (requestAnimationFrame cubic ease, or an instant jump if you have *prefers-reduced-motion* set) so the active line rests at roughly 60% of the viewport height — paper feeding through a platen. Uses the `visualViewport` API so it also works on mobile with the on-screen keyboard open. |
-| **LCD one-liner mode** | A green-backlit strip showing only the line you are typing, in the spirit of a 90s Brother word processor. Toggle with the **LCD** button or **Ctrl+L**. Switching between page view and LCD never loses text — the same editor stays focused underneath. |
-| **Font controls** | **A−** / **A+** across six size steps, plus a typeface picker: **VT323** (default), **Courier Prime**, **IBM Plex Mono** and **Libre Baskerville** (serif), loaded from Google Fonts. Size and typeface are saved to `localStorage` and page breaks are recalculated whenever either changes. |
-| **Open saved .txt files** | **OPEN .TXT** button, **Ctrl+O**, or drag and drop a `.txt` anywhere onto the app. The file opens as a new draft named after the file. |
-| **Right-click → Open with** | Installable PWA with a `file_handlers` entry for `text/plain`, a service worker for offline use and a pixel-art sun icon. |
+| Feature | Detail |
+| --- | --- |
+| **Paged writing view** | Stacked paper sheets in A4 proportions with a fixed number of lines per page. Text flows downward and a new page only appears once the current one is full. Page numbers are centred at the foot of each sheet (`— 1 —`), with a `PAGE x / y` readout in the status bar. |
+| **Caret-follow scrolling** | The line you are typing is always visible. As each new line begins, the view pans up with an eased `requestAnimationFrame` scroll so the active line sits at roughly 60% of the viewport height — like paper feeding through a typewriter. Works on desktop and on mobile with the on-screen keyboard open (via the `visualViewport` API). |
+| **LCD one-liner mode** | A green-backlit LCD strip showing only the line you are typing, in the spirit of a 90s Brother word processor. Toggle with the **LCD** button or **Ctrl + L**. Switching between page view and LCD view never loses text. |
+| **Font controls** | **A−** / **A+** across 6 size steps, plus a typeface picker: VT323 (default), Courier Prime, IBM Plex Mono and Libre Baskerville, loaded from Google Fonts. Size and typeface are saved to `localStorage`, and page breaks are recalculated whenever either changes. |
+| **Open saved .txt files** | **OPEN .TXT** button, **Ctrl + O**, or drag and drop a `.txt` anywhere onto the app. The file opens as a new draft named after the file. |
+| **Right-click → Open with think regularly** | A PWA file handler for `text/plain`. Install the app, then open `.txt` files straight from your desktop. |
 
-Everything from v2.0 still works: typewriter key audio, multiple drafts, autosave, `.txt` export and JSON backup/restore.
+Everything from v2.0 is unchanged and still working: typewriter key sounds and the carriage-return bell, multiple drafts, autosave, `.txt` export and full JSON backup.
+
+---
+
+## Files
+
+```
+index.html      the entire app (UI, editor, pagination, audio, storage)
+manifest.json   PWA manifest, including the text/plain file_handlers entry
+sw.js           service worker, caches the app for offline use
+icon.svg        pixel-art sun app icon
+README.md       this file
+```
 
 ---
 
 ## Keyboard shortcuts
 
 | Shortcut | Action |
-|---|---|
-| `Ctrl` / `Cmd` + `L` | Toggle LCD one-liner mode |
-| `Ctrl` / `Cmd` + `O` | Open a `.txt` file |
-| `Ctrl` / `Cmd` + `S` | Export the current draft as `.txt` |
-| `Ctrl` / `Cmd` + `N` | New draft |
+| --- | --- |
+| **Ctrl + L** (⌘ + L) | Toggle LCD one-liner mode |
+| **Ctrl + O** (⌘ + O) | Open a saved `.txt` file |
+| **Ctrl + S** (⌘ + S) | Force a save (autosave already runs constantly) |
+| **Ctrl + Shift + N** | New draft |
+| **↑ / ↓** | Move between lines, including across page breaks |
 
 ---
 
 ## Toolbar
 
-- **DRAFTS** — open the draft drawer (switch, rename ✎, delete ✕)
-- **NEW** — start a named draft
+- **☰ DRAFTS** — open the drafts panel (switch, rename, delete, restore a backup)
+- **+ NEW** — start a new draft
 - **OPEN .TXT** — load a text file as a new draft
 - **EXPORT** — download the current draft as `.txt`
-- **BACKUP** — download every draft as a single `.json` file
-- **RESTORE** — load a `.json` backup (dragging the `.json` onto the window also works)
-- **A− / A+**, typeface picker, **LCD**, **♪ ON/OFF** (typewriter sound)
+- **BACKUP** — download every draft as a single JSON file (restore it from the drafts panel)
+- **LCD** — one-liner display mode
+- **♪ SOUND** — typewriter key clicks and the return bell
+- **A− / A+** and the typeface picker — six sizes, four fonts
 
 ---
 
-## Install (and the right-click "Open with")
+## Install (and right-click → Open with)
 
-1. Open the site in **desktop Chrome or Edge**.
-2. Click the install icon in the address bar (or ⋮ → *Install app*) and choose **Install**.
-3. After installing, right-click any `.txt` file in your file manager → **Open with → think regularly**.
+1. Open the app in **desktop Chrome or Edge**.
+2. Click the install icon in the address bar, or menu → **Install app**.
+3. Once installed, right-click any `.txt` file in your file manager → **Open with** → **think regularly**. The file opens as a new draft.
 
-> **Note:** the right-click file handler is a Chromium-only capability and only becomes available **after** the app is installed on desktop Chrome/Edge. It does not work in Safari or Firefox, and it does not work from a plain browser tab. In those cases use the **OPEN .TXT** button, **Ctrl+O**, or drag and drop — those are the fallbacks and work everywhere.
+**Note:** the right-click file handler relies on the Web App Manifest `file_handlers` API, which currently only works in **desktop Chrome / Edge after installing the app**. In Safari, Firefox and on mobile, use the **OPEN .TXT** button or drag and drop — those are the fallback and work everywhere.
 
-Hosting notes: the service worker and manifest use relative paths (`./`), so the app works from a GitHub Pages project subpath. Service workers require HTTPS (or `localhost`).
+The service worker caches the app shell, so once it has loaded a single time it will run offline.
 
 ---
 
-## Files
+## Running it locally
 
-| File | Purpose |
-|---|---|
-| `index.html` | The whole app — markup, styles, logic |
-| `manifest.json` | PWA manifest, including the `file_handlers` entry for `.txt` |
-| `sw.js` | Service worker, cache-first app shell for offline use |
-| `icon.svg` | Pixel-art sun icon |
-| `README.md` | This file |
+Service workers and the manifest need `http://` or `https://`, not `file://`:
+
+```bash
+python3 -m http.server 8080
+# then open http://localhost:8080
+```
 
 ---
 
 ## Testing checklist
 
-- [ ] **Page 2 appears with the correct number** — type (or paste) past the bottom of sheet one; a second sheet appears, its footer reads `— 2 —`, and the status bar reads `PAGE 2 / 2`.
-- [ ] **The caret stays visible while typing long text** — hold down a key or type several paragraphs; the view keeps easing up and the active line never slips below the fold. Repeat on a phone with the keyboard open.
-- [ ] **The LCD toggle keeps your text** — type a sentence, press `Ctrl+L`, keep typing on the green strip, press `Ctrl+L` again; everything is intact and in the right place on the page.
-- [ ] **Font settings survive a reload** — change the typeface and size, reload the page; both are restored and the page breaks are recalculated to match.
-- [ ] **.txt opens via the button and via drag-and-drop** — use **OPEN .TXT** / `Ctrl+O`, then drag a `.txt` onto the window. Each opens as a new draft named after the file.
-- [ ] **After installing, right-click a .txt → Open with** — install in desktop Chrome/Edge, then right-click a `.txt` and choose *Open with → think regularly*; it launches and loads the file as a draft.
-- [ ] **Typewriter sounds still work** — keys clack, the spacebar is softer, Return gives a carriage bell; the **♪** button mutes and the setting persists.
-- [ ] **Drafts, autosave, export and backup still work** — switch drafts, confirm the status bar shows `saved …`, export a `.txt`, back up to `.json` and restore it.
+- [ ] **Page 2 appears with the correct number.** Type (or paste) past the bottom of page 1. A second sheet appears, numbered `— 2 —`, and the status bar reads `PAGE 2 / 2`.
+- [ ] **The caret stays visible while typing long text.** Keep typing to the bottom of the screen; the view pans up and the active line settles around 60% down. Repeat on a phone with the keyboard open.
+- [ ] **The LCD toggle keeps your text.** Write a paragraph, press **Ctrl + L**, keep typing on the green strip, press **Ctrl + L** again — everything is still there, in order.
+- [ ] **Font settings survive a reload.** Change the typeface and press **A+** twice, then refresh. Same font, same size, page breaks recalculated.
+- [ ] **.txt opens via the button and via drag-and-drop.** Use **OPEN .TXT** (or **Ctrl + O**), then drag a `.txt` onto the window. Both create a new draft named after the file.
+- [ ] **After installing, right-click a .txt → Open with → think regularly.** Desktop Chrome/Edge only; the file opens as a new draft.
+- [ ] **Typewriter sounds still work.** Key clicks on letters, a softer thunk on space, the bell on Enter. The **♪ SOUND** toggle silences and restores them.
+- [ ] **v2.0 regression pass.** Drafts switch cleanly, autosave shows **SAVED** in the status bar, **EXPORT** downloads a `.txt`, **BACKUP** downloads JSON and **RESTORE BACKUP** reads it back.
 
 ---
 
-## Licence
+## Notes
 
-Personal project by Guy Fraser. Use it, fork it, write something.
+- Pagination is measured with a canvas text metric that mirrors CSS `overflow-wrap: break-word`. The three monospace faces are exact; Libre Baskerville is measured per word, so a very long unbroken string may sit a pixel or two off.
+- All drafts and settings are stored in `localStorage` under `tr_drafts`, `tr_current` and `tr_settings`. Clearing site data clears your writing — use **BACKUP** regularly.

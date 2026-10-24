@@ -1,26 +1,30 @@
 {
   "name": "think regularly",
   "short_name": "think regularly",
-  "description": "A retro typewriter writing app: paged view, caret-follow scrolling, LCD one-liner mode and offline drafts.",
+  "description": "A retro typewriter writing app: paper pages, caret-follow scrolling, LCD one-liner mode and offline drafts.",
   "id": "/thinkregularly/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "any",
-  "background_color": "#1a1917",
-  "theme_color": "#1a1917",
+  "background_color": "#1c1b18",
+  "theme_color": "#1c1b18",
   "categories": ["productivity", "utilities"],
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
   ],
   "file_handlers": [
     {
       "action": "./",
       "name": "Plain text",
-      "accept": { "text/plain": [".txt", ".text", ".md"] },
-      "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }],
+      "accept": {
+        "text/plain": [".txt", ".text", ".md"]
+      },
+      "icons": [
+        { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml" }
+      ],
       "launch_type": "single-client"
     }
   ]
