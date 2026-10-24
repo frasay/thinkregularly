@@ -1,633 +1,588 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>think regularly</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>think regularly</title>
+<meta name="description" content="A quiet place for writers. Autosaves as you write. Sounds like a 90s electric typewriter.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23f7f1dc'/%3E%3Ctext x='32' y='42' font-size='30' font-family='Georgia,serif' font-style='italic' text-anchor='middle' fill='%235b5338'%3Etr%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --paper:#faf6e7;          /* light yellow-tinged page */
+    --paper-deep:#f3edd8;
+    --ink:#3d3827;
+    --ink-soft:#8a8266;
+    --ink-faint:#b5ad8f;
+    --accent:#9a6b1f;
+    --rule:#e4dcc0;
+    --drawer:#f5efdc;
+    --danger:#a0522d;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Courier Prime","Courier New",ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:#ead9a8; }
 
-        body {
-            font-family: 'Georgia', 'Garamond', serif;
-            background-color: #f9f6f0;
-            color: #2c2c2c;
-            line-height: 1.7;
-            overflow: hidden;
-        }
+  /* ---------- page column ---------- */
+  .page{
+    max-width:42rem;
+    margin:0 auto;
+    padding:4.5rem 1.5rem 7rem;
+    min-height:100vh;
+    cursor:text;
+  }
+  #title{
+    width:100%;
+    border:0; outline:0; background:transparent;
+    font-family:inherit;
+    font-size:1.65rem;
+    font-weight:700;
+    color:var(--ink);
+    caret-color:var(--accent);
+    padding:0 0 .35rem;
+    border-bottom:1px solid transparent;
+    transition:border-color .25s;
+  }
+  #title:focus{ border-bottom-color:var(--rule); }
+  #title::placeholder{ color:var(--ink-faint); font-weight:700; }
+  .title-hint{
+    font-size:.7rem; color:var(--ink-faint);
+    height:1.1rem; margin:.2rem 0 1.6rem;
+    opacity:0; transition:opacity .25s;
+    letter-spacing:.05em;
+  }
+  #title:focus ~ .title-hint{ opacity:1; }
+  #editor{
+    width:100%;
+    border:0; outline:0; background:transparent; resize:none;
+    font-family:inherit;
+    font-size:1.12rem;
+    line-height:1.75;
+    color:var(--ink);
+    caret-color:var(--accent);
+    min-height:60vh;
+    overflow:hidden;
+  }
+  #editor::placeholder{ color:var(--ink-faint); }
 
-        .container {
-            display: flex;
-            height: 100vh;
-        }
+  /* ---------- footer bar ---------- */
+  .bar{
+    position:fixed; left:0; right:0; bottom:0;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:.7rem 1.1rem .8rem;
+    font-size:.74rem; letter-spacing:.06em;
+    color:var(--ink-soft);
+    background:linear-gradient(to top, var(--paper) 55%, rgba(250,246,231,0));
+    user-select:none;
+  }
+  .bar .grp{ display:flex; gap:1.1rem; align-items:center; }
+  .bar button{
+    border:0; background:none; font:inherit; color:var(--ink-soft);
+    cursor:pointer; letter-spacing:inherit; padding:.2rem .1rem;
+  }
+  .bar button:hover{ color:var(--ink); }
+  #saveState{ transition:opacity .6s; }
+  #saveState.dim{ opacity:.45; }
 
-        /* Sidebar drawer */
-        .drawer {
-            width: 280px;
-            background-color: #f5f2ed;
-            border-right: 1px solid #e8e5e0;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
+  /* ---------- brand ---------- */
+  .brand{
+    position:fixed; top:1rem; left:50%; transform:translateX(-50%);
+    font-size:.72rem; letter-spacing:.28em; color:var(--ink-faint);
+    user-select:none; pointer-events:none;
+  }
 
-        .drawer-header {
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #8b8b8b;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #e8e5e0;
-        }
+  /* ---------- drafts drawer ---------- */
+  .scrim{
+    position:fixed; inset:0; background:rgba(61,56,39,.18);
+    opacity:0; pointer-events:none; transition:opacity .25s;
+  }
+  .scrim.open{ opacity:1; pointer-events:auto; }
+  .drawer{
+    position:fixed; top:0; left:0; bottom:0; width:min(21rem,85vw);
+    background:var(--drawer);
+    border-right:1px solid var(--rule);
+    transform:translateX(-102%);
+    transition:transform .28s cubic-bezier(.2,.8,.25,1);
+    display:flex; flex-direction:column;
+    z-index:10;
+  }
+  .drawer.open{ transform:translateX(0); }
+  .drawer header{
+    padding:1.2rem 1.2rem .9rem;
+    font-size:.72rem; letter-spacing:.24em; color:var(--ink-soft);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .drawer header button{
+    border:0; background:none; font:inherit; cursor:pointer;
+    color:var(--accent); letter-spacing:.05em; font-size:.8rem;
+  }
+  .doc-list{ flex:1; overflow-y:auto; padding:0 .6rem; }
+  .doc{
+    padding:.65rem .6rem; border-radius:6px; cursor:pointer;
+    display:flex; justify-content:space-between; align-items:baseline; gap:.5rem;
+  }
+  .doc:hover{ background:var(--paper-deep); }
+  .doc.current{ background:var(--paper-deep); }
+  .doc .t{
+    font-size:.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .doc .meta{ font-size:.62rem; color:var(--ink-faint); white-space:nowrap; }
+  .doc .del{
+    border:0; background:none; cursor:pointer; color:var(--ink-faint);
+    font-size:.72rem; font-family:inherit; visibility:hidden; padding:0 .15rem;
+  }
+  .doc:hover .del{ visibility:visible; }
+  .doc .del:hover{ color:var(--danger); }
+  .drawer footer{
+    padding:.9rem 1.2rem 1.1rem; border-top:1px solid var(--rule);
+    display:flex; gap:1.2rem; font-size:.72rem;
+  }
+  .drawer footer button{
+    border:0; background:none; font:inherit; color:var(--ink-soft);
+    cursor:pointer; letter-spacing:.05em;
+  }
+  .drawer footer button:hover{ color:var(--ink); }
 
-        .drafts-list {
-            flex: 1;
-            margin-bottom: 20px;
-        }
-
-        .draft-item {
-            padding: 10px 12px;
-            margin-bottom: 8px;
-            background-color: #fff;
-            border: 1px solid #e8e5e0;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 13px;
-            color: #5a5a5a;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .draft-item:hover {
-            background-color: #fffbf7;
-            border-color: #ddd;
-        }
-
-        .draft-item.active {
-            background-color: #fef9f3;
-            border-color: #d4a574;
-            color: #2c2c2c;
-            font-weight: 500;
-        }
-
-        .draft-title {
-            flex: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .draft-delete {
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: #b8b8b8;
-            font-size: 16px;
-            transition: color 0.2s;
-        }
-
-        .draft-delete:hover {
-            color: #d9534f;
-        }
-
-        .new-draft-btn {
-            width: 100%;
-            padding: 12px;
-            background-color: #f9f6f0;
-            border: 1px solid #e8e5e0;
-            border-radius: 4px;
-            color: #2c2c2c;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 12px;
-        }
-
-        .new-draft-btn:hover {
-            background-color: #fef9f3;
-            border-color: #d4a574;
-        }
-
-        .drawer-controls {
-            border-top: 1px solid #e8e5e0;
-            padding-top: 12px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .control-btn {
-            flex: 1;
-            min-width: 80px;
-            padding: 8px 10px;
-            font-size: 12px;
-            background-color: #fff;
-            border: 1px solid #e8e5e0;
-            border-radius: 4px;
-            color: #5a5a5a;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .control-btn:hover {
-            background-color: #fffbf7;
-            border-color: #ddd;
-        }
-
-        .control-btn.mute {
-            background-color: #f9f6f0;
-        }
-
-        .control-btn.mute.active {
-            background-color: #e8e5e0;
-            font-weight: 500;
-        }
-
-        /* Main editor */
-        .editor {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background-color: #fffdf9;
-        }
-
-        .editor-header {
-            padding: 30px 40px 20px 40px;
-            border-bottom: 1px solid #f0ede8;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .title-section {
-            flex: 1;
-        }
-
-        .title-input {
-            font-size: 28px;
-            font-weight: 600;
-            color: #2c2c2c;
-            background: transparent;
-            border: none;
-            padding: 4px 0;
-            width: 100%;
-            font-family: 'Georgia', 'Garamond', serif;
-            transition: all 0.2s;
-        }
-
-        .title-input:focus {
-            outline: none;
-            border-bottom: 2px solid #d4a574;
-            padding-bottom: 2px;
-        }
-
-        .title-input::placeholder {
-            color: #c9c9c9;
-        }
-
-        .save-indicator {
-            font-size: 12px;
-            color: #b8b8b8;
-            white-space: nowrap;
-            margin-left: 20px;
-        }
-
-        .save-indicator.saving {
-            color: #d4a574;
-            animation: pulse 0.5s ease-in-out;
-        }
-
-        .save-indicator.saved {
-            color: #8bc34a;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* Text editor */
-        .text-editor {
-            flex: 1;
-            padding: 30px 40px;
-            overflow-y: auto;
-        }
-
-        .text-area {
-            width: 100%;
-            height: 100%;
-            background: transparent;
-            border: none;
-            color: #2c2c2c;
-            font-family: 'Georgia', 'Garamond', serif;
-            font-size: 16px;
-            line-height: 1.8;
-            resize: none;
-        }
-
-        .text-area:focus {
-            outline: none;
-        }
-
-        .text-area::placeholder {
-            color: #d4c4b8;
-        }
-
-        /* Word count */
-        .word-count {
-            font-size: 12px;
-            color: #b8b8b8;
-            padding: 20px 40px 20px 40px;
-            border-top: 1px solid #f0ede8;
-            text-align: right;
-        }
-
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #e8e5e0;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #d4d1cc;
-        }
-
-        /* Mobile responsiveness */
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-
-            .drawer {
-                width: 100%;
-                height: auto;
-                max-height: 200px;
-                border-right: none;
-                border-bottom: 1px solid #e8e5e0;
-                flex-direction: row;
-                padding: 16px;
-            }
-
-            .drafts-list {
-                flex: 1;
-                display: flex;
-                gap: 8px;
-                overflow-x: auto;
-                margin-bottom: 0;
-            }
-
-            .draft-item {
-                flex-shrink: 0;
-                width: 200px;
-                margin-bottom: 0;
-            }
-
-            .editor-header {
-                padding: 20px;
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .save-indicator {
-                margin-left: 0;
-                margin-top: 8px;
-            }
-
-            .text-editor {
-                padding: 20px;
-            }
-
-            .word-count {
-                padding: 16px 20px;
-            }
-        }
-    </style>
+  @media (max-width:600px){
+    .page{ padding-top:3.5rem; }
+    #title{ font-size:1.3rem; }
+    #editor{ font-size:1rem; }
+  }
+  @media print{
+    .bar,.brand,.drawer,.scrim{ display:none; }
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <!-- Drawer -->
-        <div class="drawer">
-            <div class="drawer-header">Drafts</div>
-            <div class="drafts-list" id="draftsList"></div>
-            <button class="new-draft-btn" id="newDraftBtn">+ New Draft</button>
-            <div class="drawer-controls">
-                <button class="control-btn mute" id="muteBtn">Sound: On</button>
-                <button class="control-btn" id="downloadBtn">Download</button>
-                <button class="control-btn" id="backupBtn">Backup All</button>
-            </div>
-        </div>
 
-        <!-- Editor -->
-        <div class="editor">
-            <div class="editor-header">
-                <div class="title-section">
-                    <input type="text" class="title-input" id="titleInput" placeholder="Untitled">
-                </div>
-                <div class="save-indicator" id="saveIndicator">saving...</div>
-            </div>
-            <div class="text-editor">
-                <textarea class="text-area" id="textArea" placeholder="Start writing..."></textarea>
-            </div>
-            <div class="word-count" id="wordCount">0 words</div>
-        </div>
-    </div>
+<div class="brand">THINK&nbsp;REGULARLY</div>
 
-    <script>
-        // State management
-        const state = {
-            drafts: [],
-            currentDraftId: null,
-            isMuted: localStorage.getItem('thinkRegularly_muted') === 'true',
-            lastSaveTime: Date.now(),
-        };
+<main class="page" id="page">
+  <input id="title" type="text" placeholder="Untitled" spellcheck="false" autocomplete="off" maxlength="120">
+  <div class="title-hint">this is the name of your piece — press enter to start writing</div>
+  <textarea id="editor" placeholder="start writing…" spellcheck="true"></textarea>
+</main>
 
-        const UI = {
-            titleInput: document.getElementById('titleInput'),
-            textArea: document.getElementById('textArea'),
-            draftsList: document.getElementById('draftsList'),
-            saveIndicator: document.getElementById('saveIndicator'),
-            wordCount: document.getElementById('wordCount'),
-            newDraftBtn: document.getElementById('newDraftBtn'),
-            muteBtn: document.getElementById('muteBtn'),
-            downloadBtn: document.getElementById('downloadBtn'),
-            backupBtn: document.getElementById('backupBtn'),
-        };
+<div class="bar">
+  <div class="grp">
+    <button id="drawerBtn" title="Your pieces (Ctrl+K)">drafts</button>
+    <button id="newBtn" title="New piece">+ new</button>
+  </div>
+  <div class="grp">
+    <span id="saveState" class="dim">saved</span>
+    <span id="wordCount">0 words</span>
+    <button id="soundBtn" title="Toggle typewriter sound (Ctrl+M)">sound on</button>
+  </div>
+</div>
 
-        // Web Audio synthesis for typewriter sounds
-        const AudioEngine = {
-            audioContext: null,
-            enabled: !state.isMuted,
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Your pieces">
+  <header>
+    <span>YOUR PIECES</span>
+    <button id="drawerNewBtn">+ new piece</button>
+  </header>
+  <div class="doc-list" id="docList"></div>
+  <footer>
+    <button id="exportTxtBtn" title="Download the current piece as a .txt file">download .txt</button>
+    <button id="backupBtn" title="Download all pieces as a .json backup">backup all</button>
+  </footer>
+</aside>
 
-            init() {
-                if (!this.audioContext) {
-                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                }
-            },
+<script>
+(function(){
+'use strict';
 
-            playKeySound() {
-                if (!this.enabled || !this.audioContext) return;
+/* =========================================================
+   think regularly — a quiet place for writers
+   zero dependencies · localStorage autosave · Web Audio keys
+   ========================================================= */
 
-                this.init();
-                const ctx = this.audioContext;
-                const now = ctx.currentTime;
+var STORE_KEY = 'thinkregularly.v1';
 
-                // Randomize between 3 typewriter sounds
-                const soundType = Math.floor(Math.random() * 3);
+/* ---------- state ---------- */
+function uid(){ return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function now(){ return Date.now(); }
 
-                if (soundType === 0) {
-                    // Metallic click
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.frequency.setValueAtTime(150, now);
-                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.05);
-                    gain.gain.setValueAtTime(0.15, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-                    osc.start(now);
-                    osc.stop(now + 0.08);
-                } else if (soundType === 1) {
-                    // Higher pitched tap
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.frequency.setValueAtTime(220, now);
-                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.06);
-                    gain.gain.setValueAtTime(0.12, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.07);
-                    osc.start(now);
-                    osc.stop(now + 0.07);
-                } else {
-                    // Mid-range mechanical sound
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.frequency.setValueAtTime(180, now);
-                    osc.frequency.exponentialRampToValueAtTime(90, now + 0.055);
-                    gain.gain.setValueAtTime(0.14, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-                    osc.start(now);
-                    osc.stop(now + 0.08);
-                }
-            },
+function freshDoc(){
+  return { id: uid(), title: '', body: '', created: now(), updated: now() };
+}
 
-            toggle() {
-                this.enabled = !this.enabled;
-                localStorage.setItem('thinkRegularly_muted', !this.enabled);
-            },
-        };
+function loadState(){
+  try{
+    var raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      var s = JSON.parse(raw);
+      if(s && s.docs && s.docs.length) return s;
+    }
+  }catch(e){}
+  var d = freshDoc();
+  return { docs:[d], currentId:d.id };
+}
 
-        // Draft management
-        const DraftManager = {
-            load() {
-                const saved = localStorage.getItem('thinkRegularly_drafts');
-                state.drafts = saved ? JSON.parse(saved) : [];
-                if (state.drafts.length === 0) {
-                    this.createDraft('Untitled');
-                }
-                state.currentDraftId = state.drafts[0].id;
-            },
+var state = loadState();
 
-            save() {
-                localStorage.setItem('thinkRegularly_drafts', JSON.stringify(state.drafts));
-            },
+function currentDoc(){
+  for(var i=0;i<state.docs.length;i++){
+    if(state.docs[i].id === state.currentId) return state.docs[i];
+  }
+  state.currentId = state.docs[0].id;
+  return state.docs[0];
+}
 
-            createDraft(title = 'Untitled') {
-                const draft = {
-                    id: Date.now().toString(),
-                    title: title,
-                    content: '',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                };
-                state.drafts.unshift(draft);
-                this.save();
-                return draft;
-            },
+/* ---------- elements ---------- */
+var $title   = document.getElementById('title');
+var $editor  = document.getElementById('editor');
+var $page    = document.getElementById('page');
+var $save    = document.getElementById('saveState');
+var $words   = document.getElementById('wordCount');
+var $soundBtn= document.getElementById('soundBtn');
+var $drawer  = document.getElementById('drawer');
+var $scrim   = document.getElementById('scrim');
+var $docList = document.getElementById('docList');
 
-            getCurrentDraft() {
-                return state.drafts.find(d => d.id === state.currentDraftId);
-            },
+/* ---------- autosave ---------- */
+var saveTimer = null;
+function persist(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+  $save.textContent = 'saved';
+  $save.classList.add('dim');
+}
+function scheduleSave(){
+  $save.textContent = 'saving…';
+  $save.classList.remove('dim');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(persist, 350);
+}
+function saveNow(){
+  clearTimeout(saveTimer);
+  persist();
+}
 
-            updateCurrentDraft(title, content) {
-                const draft = this.getCurrentDraft();
-                if (draft) {
-                    draft.title = title;
-                    draft.content = content;
-                    draft.updatedAt = new Date().toISOString();
-                    this.save();
-                }
-            },
+/* ---------- editor wiring ---------- */
+function autogrow(){
+  $editor.style.height = 'auto';
+  $editor.style.height = ($editor.scrollHeight + 2) + 'px';
+}
+function updateWordCount(){
+  var n = $editor.value.trim() ? $editor.value.trim().split(/\s+/).length : 0;
+  $words.textContent = n + (n === 1 ? ' word' : ' words');
+}
+function updateTabTitle(){
+  var t = $title.value.trim();
+  document.title = t ? (t + ' — think regularly') : 'think regularly';
+}
+function loadDocIntoEditor(){
+  var d = currentDoc();
+  $title.value = d.title;
+  $editor.value = d.body;
+  autogrow();
+  updateWordCount();
+  updateTabTitle();
+}
 
-            deleteDraft(id) {
-                state.drafts = state.drafts.filter(d => d.id !== id);
-                this.save();
-                if (state.currentDraftId === id) {
-                    state.currentDraftId = state.drafts.length > 0 ? state.drafts[0].id : null;
-                    if (state.drafts.length === 0) {
-                        this.createDraft('Untitled');
-                    }
-                }
-            },
+$editor.addEventListener('input', function(){
+  var d = currentDoc();
+  d.body = $editor.value;
+  d.updated = now();
+  autogrow();
+  updateWordCount();
+  scheduleSave();
+});
 
-            switchTo(id) {
-                state.currentDraftId = id;
-                this.loadCurrentDraft();
-            },
+$title.addEventListener('input', function(){
+  var d = currentDoc();
+  d.title = $title.value;
+  d.updated = now();
+  updateTabTitle();
+  scheduleSave();
+});
 
-            loadCurrentDraft() {
-                const draft = this.getCurrentDraft();
-                if (draft) {
-                    UI.titleInput.value = draft.title;
-                    UI.textArea.value = draft.content;
-                    updateWordCount();
-                    renderDraftsList();
-                }
-            },
-        };
+$title.addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){ e.preventDefault(); $editor.focus(); }
+});
 
-        // UI rendering
-        function renderDraftsList() {
-            UI.draftsList.innerHTML = '';
-            state.drafts.forEach(draft => {
-                const item = document.createElement('div');
-                item.className = `draft-item ${draft.id === state.currentDraftId ? 'active' : ''}`;
-                item.innerHTML = `
-                    <div class="draft-title">${draft.title || 'Untitled'}</div>
-                    <div class="draft-delete" data-id="${draft.id}">×</div>
-                `;
-                item.querySelector('.draft-title').addEventListener('click', () => {
-                    DraftManager.switchTo(draft.id);
-                });
-                item.querySelector('.draft-delete').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (confirm('Delete this draft?')) {
-                        DraftManager.deleteDraft(draft.id);
-                        renderDraftsList();
-                        DraftManager.loadCurrentDraft();
-                    }
-                });
-                UI.draftsList.appendChild(item);
-            });
-        }
+/* clicking empty page space puts the caret in the editor */
+$page.addEventListener('mousedown', function(e){
+  if(e.target === $page){
+    e.preventDefault();
+    $editor.focus();
+    $editor.setSelectionRange($editor.value.length, $editor.value.length);
+  }
+});
 
-        function updateWordCount() {
-            const text = UI.textArea.value.trim();
-            const words = text.length === 0 ? 0 : text.split(/\s+/).length;
-            UI.wordCount.textContent = `${words} word${words !== 1 ? 's' : ''}`;
-        }
+window.addEventListener('beforeunload', saveNow);
 
-        function updateSaveIndicator() {
-            const now = Date.now();
-            state.lastSaveTime = now;
-            UI.saveIndicator.textContent = 'saved';
-            UI.saveIndicator.classList.remove('saving');
-            UI.saveIndicator.classList.add('saved');
-            setTimeout(() => {
-                UI.saveIndicator.classList.remove('saved');
-                UI.saveIndicator.textContent = 'saved';
-            }, 2000);
-        }
+/* =========================================================
+   SOUND — 90s electric typewriter, synthesized in code.
+   A daisy-wheel style "chk" with pitch/tone variety per key,
+   a deeper spacebar thunk, a softer backspace, and a
+   carriage-return ding on Enter. No audio files.
+   ========================================================= */
+var Snd = {
+  enabled: true,
+  ctx: null,
+  master: null,
+  noiseBuf: null,
+  variants: [
+    { f: 2600, q: 0.9, dur: 0.055, vol: 0.50, thump: 170 },
+    { f: 2100, q: 1.1, dur: 0.060, vol: 0.46, thump: 150 },
+    { f: 3100, q: 0.8, dur: 0.050, vol: 0.44, thump: 185 },
+    { f: 1800, q: 1.2, dur: 0.065, vol: 0.48, thump: 140 }
+  ],
+  init: function(){
+    if(this.ctx) return;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) { this.enabled = false; return; }
+    this.ctx = new AC();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = 0.45;
+    this.master.connect(this.ctx.destination);
+    var len = Math.floor(this.ctx.sampleRate * 0.25);
+    this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    var ch = this.noiseBuf.getChannelData(0);
+    for(var i=0;i<len;i++) ch[i] = Math.random() * 2 - 1;
+  },
+  resume: function(){
+    if(this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  burst: function(freq, q, dur, vol){
+    var t = this.ctx.currentTime;
+    var src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuf;
+    var bp = this.ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = freq;
+    bp.Q.value = q;
+    var g = this.ctx.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(bp); bp.connect(g); g.connect(this.master);
+    src.start(t);
+    src.stop(t + dur + 0.03);
+  },
+  thump: function(freq, vol, dur){
+    var t = this.ctx.currentTime;
+    var o = this.ctx.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(freq, t);
+    o.frequency.exponentialRampToValueAtTime(55, t + dur * 0.8);
+    var g = this.ctx.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(this.master);
+    o.start(t); o.stop(t + dur + 0.02);
+  },
+  key: function(){
+    if(!this.ready()) return;
+    var v = this.variants[Math.floor(Math.random() * this.variants.length)];
+    var jitter = 0.85 + Math.random() * 0.3;      /* natural variation */
+    this.burst(v.f * jitter, v.q, v.dur, v.vol * (0.85 + Math.random() * 0.3));
+    this.thump(v.thump * jitter, 0.22, 0.045);
+  },
+  space: function(){
+    if(!this.ready()) return;
+    this.burst(600 + Math.random() * 150, 1.4, 0.075, 0.5);
+    this.thump(110, 0.3, 0.06);
+  },
+  backspace: function(){
+    if(!this.ready()) return;
+    this.burst(1400 + Math.random() * 200, 1.2, 0.045, 0.3);
+    this.thump(130, 0.15, 0.04);
+  },
+  enter: function(){
+    if(!this.ready()) return;
+    /* mechanical clunk */
+    this.burst(900, 1.1, 0.09, 0.45);
+    this.thump(95, 0.32, 0.08);
+    /* the little carriage-return ding */
+    var t = this.ctx.currentTime + 0.05;
+    var freqs = [1244.5, 2489.0];   /* bell fundamental + overtone */
+    for(var i=0;i<freqs.length;i++){
+      var o = this.ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = freqs[i];
+      var g = this.ctx.createGain();
+      var peak = i === 0 ? 0.20 : 0.07;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(peak, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+      o.connect(g); g.connect(this.master);
+      o.start(t); o.stop(t + 1.0);
+    }
+  },
+  ready: function(){
+    if(!this.enabled) return false;
+    this.init();
+    if(!this.ctx) return false;
+    this.resume();
+    return true;
+  },
+  toggle: function(){
+    this.enabled = !this.enabled;
+    $soundBtn.textContent = this.enabled ? 'sound on' : 'sound off';
+    if(this.enabled) this.key();   /* confirmation clack */
+  }
+};
 
-        // Event listeners
-        UI.titleInput.addEventListener('input', (e) => {
-            DraftManager.updateCurrentDraft(e.target.value, UI.textArea.value);
-            updateSaveIndicator();
-        });
+function handleKeySound(e){
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  var k = e.key;
+  if(k === 'Enter'){ Snd.enter(); return; }
+  if(k === ' ' || k === 'Spacebar'){ Snd.space(); return; }
+  if(k === 'Backspace' || k === 'Delete'){ Snd.backspace(); return; }
+  if(k.length === 1){ Snd.key(); return; }   /* printable characters only */
+  if(k === 'Tab'){ Snd.key(); }
+}
+$editor.addEventListener('keydown', handleKeySound);
+$title.addEventListener('keydown', handleKeySound);
+$soundBtn.addEventListener('click', function(){ Snd.toggle(); });
 
-        UI.textArea.addEventListener('input', (e) => {
-            AudioEngine.playKeySound();
-            DraftManager.updateCurrentDraft(UI.titleInput.value, e.target.value);
-            updateWordCount();
-            UI.saveIndicator.textContent = 'saving...';
-            UI.saveIndicator.classList.remove('saved');
-            UI.saveIndicator.classList.add('saving');
-        });
+/* =========================================================
+   DRAFTS DRAWER
+   ========================================================= */
+function fmtDate(ts){
+  var d = new Date(ts);
+  return d.toLocaleDateString(undefined, { day:'numeric', month:'short' }) +
+         ' · ' +
+         d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' });
+}
 
-        UI.textArea.addEventListener('change', () => {
-            updateSaveIndicator();
-        });
+function renderDocList(){
+  $docList.innerHTML = '';
+  var sorted = state.docs.slice().sort(function(a,b){ return b.updated - a.updated; });
+  sorted.forEach(function(d){
+    var row = document.createElement('div');
+    row.className = 'doc' + (d.id === state.currentId ? ' current' : '');
 
-        UI.newDraftBtn.addEventListener('click', () => {
-            const draft = DraftManager.createDraft('Untitled');
-            state.currentDraftId = draft.id;
-            DraftManager.loadCurrentDraft();
-        });
+    var left = document.createElement('div');
+    left.style.minWidth = '0';
+    var t = document.createElement('div');
+    t.className = 't';
+    t.textContent = d.title.trim() || 'Untitled';
+    var m = document.createElement('div');
+    m.className = 'meta';
+    m.textContent = fmtDate(d.updated);
+    left.appendChild(t); left.appendChild(m);
 
-        UI.muteBtn.addEventListener('click', () => {
-            AudioEngine.toggle();
-            state.isMuted = !AudioEngine.enabled;
-            UI.muteBtn.textContent = AudioEngine.enabled ? 'Sound: On' : 'Sound: Off';
-            UI.muteBtn.classList.toggle('active', !AudioEngine.enabled);
-        });
+    var del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = 'delete';
+    del.title = 'Delete this piece';
+    del.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      var name = d.title.trim() || 'Untitled';
+      if(!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+      state.docs = state.docs.filter(function(x){ return x.id !== d.id; });
+      if(!state.docs.length){
+        var nd = freshDoc();
+        state.docs.push(nd);
+        state.currentId = nd.id;
+      } else if(state.currentId === d.id){
+        state.currentId = state.docs[0].id;
+      }
+      saveNow();
+      loadDocIntoEditor();
+      renderDocList();
+    });
 
-        UI.downloadBtn.addEventListener('click', () => {
-            const draft = DraftManager.getCurrentDraft();
-            if (!draft) return;
-            const content = `${draft.title}\n${'='.repeat(draft.title.length)}\n\n${draft.content}`;
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${draft.title || 'untitled'}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
+    row.appendChild(left);
+    row.appendChild(del);
+    row.addEventListener('click', function(){
+      state.currentId = d.id;
+      saveNow();
+      loadDocIntoEditor();
+      closeDrawer();
+      $editor.focus();
+    });
+    $docList.appendChild(row);
+  });
+}
 
-        UI.backupBtn.addEventListener('click', () => {
-            const backup = {
-                exportDate: new Date().toISOString(),
-                drafts: state.drafts,
-            };
-            const json = JSON.stringify(backup, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `think-regularly-backup-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
+function openDrawer(){
+  renderDocList();
+  $drawer.classList.add('open');
+  $scrim.classList.add('open');
+}
+function closeDrawer(){
+  $drawer.classList.remove('open');
+  $scrim.classList.remove('open');
+}
+function drawerIsOpen(){ return $drawer.classList.contains('open'); }
 
-        // Initialize
-        function init() {
-            DraftManager.load();
-            DraftManager.loadCurrentDraft();
-            renderDraftsList();
-            UI.muteBtn.classList.toggle('active', state.isMuted);
-            UI.muteBtn.textContent = state.isMuted ? 'Sound: Off' : 'Sound: On';
-            updateWordCount();
-            updateSaveIndicator();
-        }
+function newPiece(){
+  var d = freshDoc();
+  state.docs.push(d);
+  state.currentId = d.id;
+  saveNow();
+  loadDocIntoEditor();
+  closeDrawer();
+  $title.focus();
+}
 
-        init();
-    </script>
+document.getElementById('drawerBtn').addEventListener('click', function(){
+  drawerIsOpen() ? closeDrawer() : openDrawer();
+});
+document.getElementById('newBtn').addEventListener('click', newPiece);
+document.getElementById('drawerNewBtn').addEventListener('click', newPiece);
+$scrim.addEventListener('click', closeDrawer);
+
+/* ---------- export ---------- */
+function download(filename, text, mime){
+  var blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 400);
+}
+function safeName(s){
+  return (s.trim() || 'untitled').replace(/[^a-z0-9 _-]/gi, '').trim().replace(/\s+/g, '-').toLowerCase() || 'untitled';
+}
+document.getElementById('exportTxtBtn').addEventListener('click', function(){
+  var d = currentDoc();
+  var head = (d.title.trim() || 'Untitled') + '\n\n';
+  download(safeName(d.title) + '.txt', head + d.body);
+});
+document.getElementById('backupBtn').addEventListener('click', function(){
+  download('think-regularly-backup-' + new Date().toISOString().slice(0,10) + '.json',
+           JSON.stringify(state, null, 2), 'application/json');
+});
+
+/* ---------- global shortcuts ---------- */
+document.addEventListener('keydown', function(e){
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's'){
+    e.preventDefault();
+    saveNow();
+  }
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm'){
+    e.preventDefault();
+    Snd.toggle();
+  }
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'){
+    e.preventDefault();
+    drawerIsOpen() ? closeDrawer() : openDrawer();
+  }
+  if(e.key === 'Escape' && drawerIsOpen()){
+    closeDrawer();
+    $editor.focus();
+  }
+});
+
+/* ---------- boot ---------- */
+loadDocIntoEditor();
+window.addEventListener('resize', autogrow);
+if(!$editor.value && !$title.value){ $title.focus(); } else { $editor.focus(); }
+
+})();
+</script>
 </body>
 </html>
