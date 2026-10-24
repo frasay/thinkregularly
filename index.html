@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>think regularly</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Garamond', serif;
+            background-color: #f9f6f0;
+            color: #2c2c2c;
+            line-height: 1.7;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar drawer */
+        .drawer {
+            width: 280px;
+            background-color: #f5f2ed;
+            border-right: 1px solid #e8e5e0;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .drawer-header {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8b8b8b;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e8e5e0;
+        }
+
+        .drafts-list {
+            flex: 1;
+            margin-bottom: 20px;
+        }
+
+        .draft-item {
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background-color: #fff;
+            border: 1px solid #e8e5e0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+            color: #5a5a5a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .draft-item:hover {
+            background-color: #fffbf7;
+            border-color: #ddd;
+        }
+
+        .draft-item.active {
+            background-color: #fef9f3;
+            border-color: #d4a574;
+            color: #2c2c2c;
+            font-weight: 500;
+        }
+
+        .draft-title {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .draft-delete {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #b8b8b8;
+            font-size: 16px;
+            transition: color 0.2s;
+        }
+
+        .draft-delete:hover {
+            color: #d9534f;
+        }
+
+        .new-draft-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #f9f6f0;
+            border: 1px solid #e8e5e0;
+            border-radius: 4px;
+            color: #2c2c2c;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .new-draft-btn:hover {
+            background-color: #fef9f3;
+            border-color: #d4a574;
+        }
+
+        .drawer-controls {
+            border-top: 1px solid #e8e5e0;
+            padding-top: 12px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 8px 10px;
+            font-size: 12px;
+            background-color: #fff;
+            border: 1px solid #e8e5e0;
+            border-radius: 4px;
+            color: #5a5a5a;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background-color: #fffbf7;
+            border-color: #ddd;
+        }
+
+        .control-btn.mute {
+            background-color: #f9f6f0;
+        }
+
+        .control-btn.mute.active {
+            background-color: #e8e5e0;
+            font-weight: 500;
+        }
+
+        /* Main editor */
+        .editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #fffdf9;
+        }
+
+        .editor-header {
+            padding: 30px 40px 20px 40px;
+            border-bottom: 1px solid #f0ede8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .title-section {
+            flex: 1;
+        }
+
+        .title-input {
+            font-size: 28px;
+            font-weight: 600;
+            color: #2c2c2c;
+            background: transparent;
+            border: none;
+            padding: 4px 0;
+            width: 100%;
+            font-family: 'Georgia', 'Garamond', serif;
+            transition: all 0.2s;
+        }
+
+        .title-input:focus {
+            outline: none;
+            border-bottom: 2px solid #d4a574;
+            padding-bottom: 2px;
+        }
+
+        .title-input::placeholder {
+            color: #c9c9c9;
+        }
+
+        .save-indicator {
+            font-size: 12px;
+            color: #b8b8b8;
+            white-space: nowrap;
+            margin-left: 20px;
+        }
+
+        .save-indicator.saving {
+            color: #d4a574;
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        .save-indicator.saved {
+            color: #8bc34a;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Text editor */
+        .text-editor {
+            flex: 1;
+            padding: 30px 40px;
+            overflow-y: auto;
+        }
+
+        .text-area {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #2c2c2c;
+            font-family: 'Georgia', 'Garamond', serif;
+            font-size: 16px;
+            line-height: 1.8;
+            resize: none;
+        }
+
+        .text-area:focus {
+            outline: none;
+        }
+
+        .text-area::placeholder {
+            color: #d4c4b8;
+        }
+
+        /* Word count */
+        .word-count {
+            font-size: 12px;
+            color: #b8b8b8;
+            padding: 20px 40px 20px 40px;
+            border-top: 1px solid #f0ede8;
+            text-align: right;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e8e5e0;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4d1cc;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .drawer {
+                width: 100%;
+                height: auto;
+                max-height: 200px;
+                border-right: none;
+                border-bottom: 1px solid #e8e5e0;
+                flex-direction: row;
+                padding: 16px;
+            }
+
+            .drafts-list {
+                flex: 1;
+                display: flex;
+                gap: 8px;
+                overflow-x: auto;
+                margin-bottom: 0;
+            }
+
+            .draft-item {
+                flex-shrink: 0;
+                width: 200px;
+                margin-bottom: 0;
+            }
+
+            .editor-header {
+                padding: 20px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .save-indicator {
+                margin-left: 0;
+                margin-top: 8px;
+            }
+
+            .text-editor {
+                padding: 20px;
+            }
+
+            .word-count {
+                padding: 16px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Drawer -->
+        <div class="drawer">
+            <div class="drawer-header">Drafts</div>
+            <div class="drafts-list" id="draftsList"></div>
+            <button class="new-draft-btn" id="newDraftBtn">+ New Draft</button>
+            <div class="drawer-controls">
+                <button class="control-btn mute" id="muteBtn">Sound: On</button>
+                <button class="control-btn" id="downloadBtn">Download</button>
+                <button class="control-btn" id="backupBtn">Backup All</button>
+            </div>
+        </div>
+
+        <!-- Editor -->
+        <div class="editor">
+            <div class="editor-header">
+                <div class="title-section">
+                    <input type="text" class="title-input" id="titleInput" placeholder="Untitled">
+                </div>
+                <div class="save-indicator" id="saveIndicator">saving...</div>
+            </div>
+            <div class="text-editor">
+                <textarea class="text-area" id="textArea" placeholder="Start writing..."></textarea>
+            </div>
+            <div class="word-count" id="wordCount">0 words</div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        const state = {
+            drafts: [],
+            currentDraftId: null,
+            isMuted: localStorage.getItem('thinkRegularly_muted') === 'true',
+            lastSaveTime: Date.now(),
+        };
+
+        const UI = {
+            titleInput: document.getElementById('titleInput'),
+            textArea: document.getElementById('textArea'),
+            draftsList: document.getElementById('draftsList'),
+            saveIndicator: document.getElementById('saveIndicator'),
+            wordCount: document.getElementById('wordCount'),
+            newDraftBtn: document.getElementById('newDraftBtn'),
+            muteBtn: document.getElementById('muteBtn'),
+            downloadBtn: document.getElementById('downloadBtn'),
+            backupBtn: document.getElementById('backupBtn'),
+        };
+
+        // Web Audio synthesis for typewriter sounds
+        const AudioEngine = {
+            audioContext: null,
+            enabled: !state.isMuted,
+
+            init() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+
+            playKeySound() {
+                if (!this.enabled || !this.audioContext) return;
+
+                this.init();
+                const ctx = this.audioContext;
+                const now = ctx.currentTime;
+
+                // Randomize between 3 typewriter sounds
+                const soundType = Math.floor(Math.random() * 3);
+
+                if (soundType === 0) {
+                    // Metallic click
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.05);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (soundType === 1) {
+                    // Higher pitched tap
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.06);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.07);
+                    osc.start(now);
+                    osc.stop(now + 0.07);
+                } else {
+                    // Mid-range mechanical sound
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.exponentialRampToValueAtTime(90, now + 0.055);
+                    gain.gain.setValueAtTime(0.14, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                }
+            },
+
+            toggle() {
+                this.enabled = !this.enabled;
+                localStorage.setItem('thinkRegularly_muted', !this.enabled);
+            },
+        };
+
+        // Draft management
+        const DraftManager = {
+            load() {
+                const saved = localStorage.getItem('thinkRegularly_drafts');
+                state.drafts = saved ? JSON.parse(saved) : [];
+                if (state.drafts.length === 0) {
+                    this.createDraft('Untitled');
+                }
+                state.currentDraftId = state.drafts[0].id;
+            },
+
+            save() {
+                localStorage.setItem('thinkRegularly_drafts', JSON.stringify(state.drafts));
+            },
+
+            createDraft(title = 'Untitled') {
+                const draft = {
+                    id: Date.now().toString(),
+                    title: title,
+                    content: '',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                };
+                state.drafts.unshift(draft);
+                this.save();
+                return draft;
+            },
+
+            getCurrentDraft() {
+                return state.drafts.find(d => d.id === state.currentDraftId);
+            },
+
+            updateCurrentDraft(title, content) {
+                const draft = this.getCurrentDraft();
+                if (draft) {
+                    draft.title = title;
+                    draft.content = content;
+                    draft.updatedAt = new Date().toISOString();
+                    this.save();
+                }
+            },
+
+            deleteDraft(id) {
+                state.drafts = state.drafts.filter(d => d.id !== id);
+                this.save();
+                if (state.currentDraftId === id) {
+                    state.currentDraftId = state.drafts.length > 0 ? state.drafts[0].id : null;
+                    if (state.drafts.length === 0) {
+                        this.createDraft('Untitled');
+                    }
+                }
+            },
+
+            switchTo(id) {
+                state.currentDraftId = id;
+                this.loadCurrentDraft();
+            },
+
+            loadCurrentDraft() {
+                const draft = this.getCurrentDraft();
+                if (draft) {
+                    UI.titleInput.value = draft.title;
+                    UI.textArea.value = draft.content;
+                    updateWordCount();
+                    renderDraftsList();
+                }
+            },
+        };
+
+        // UI rendering
+        function renderDraftsList() {
+            UI.draftsList.innerHTML = '';
+            state.drafts.forEach(draft => {
+                const item = document.createElement('div');
+                item.className = `draft-item ${draft.id === state.currentDraftId ? 'active' : ''}`;
+                item.innerHTML = `
+                    <div class="draft-title">${draft.title || 'Untitled'}</div>
+                    <div class="draft-delete" data-id="${draft.id}">×</div>
+                `;
+                item.querySelector('.draft-title').addEventListener('click', () => {
+                    DraftManager.switchTo(draft.id);
+                });
+                item.querySelector('.draft-delete').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm('Delete this draft?')) {
+                        DraftManager.deleteDraft(draft.id);
+                        renderDraftsList();
+                        DraftManager.loadCurrentDraft();
+                    }
+                });
+                UI.draftsList.appendChild(item);
+            });
+        }
+
+        function updateWordCount() {
+            const text = UI.textArea.value.trim();
+            const words = text.length === 0 ? 0 : text.split(/\s+/).length;
+            UI.wordCount.textContent = `${words} word${words !== 1 ? 's' : ''}`;
+        }
+
+        function updateSaveIndicator() {
+            const now = Date.now();
+            state.lastSaveTime = now;
+            UI.saveIndicator.textContent = 'saved';
+            UI.saveIndicator.classList.remove('saving');
+            UI.saveIndicator.classList.add('saved');
+            setTimeout(() => {
+                UI.saveIndicator.classList.remove('saved');
+                UI.saveIndicator.textContent = 'saved';
+            }, 2000);
+        }
+
+        // Event listeners
+        UI.titleInput.addEventListener('input', (e) => {
+            DraftManager.updateCurrentDraft(e.target.value, UI.textArea.value);
+            updateSaveIndicator();
+        });
+
+        UI.textArea.addEventListener('input', (e) => {
+            AudioEngine.playKeySound();
+            DraftManager.updateCurrentDraft(UI.titleInput.value, e.target.value);
+            updateWordCount();
+            UI.saveIndicator.textContent = 'saving...';
+            UI.saveIndicator.classList.remove('saved');
+            UI.saveIndicator.classList.add('saving');
+        });
+
+        UI.textArea.addEventListener('change', () => {
+            updateSaveIndicator();
+        });
+
+        UI.newDraftBtn.addEventListener('click', () => {
+            const draft = DraftManager.createDraft('Untitled');
+            state.currentDraftId = draft.id;
+            DraftManager.loadCurrentDraft();
+        });
+
+        UI.muteBtn.addEventListener('click', () => {
+            AudioEngine.toggle();
+            state.isMuted = !AudioEngine.enabled;
+            UI.muteBtn.textContent = AudioEngine.enabled ? 'Sound: On' : 'Sound: Off';
+            UI.muteBtn.classList.toggle('active', !AudioEngine.enabled);
+        });
+
+        UI.downloadBtn.addEventListener('click', () => {
+            const draft = DraftManager.getCurrentDraft();
+            if (!draft) return;
+            const content = `${draft.title}\n${'='.repeat(draft.title.length)}\n\n${draft.content}`;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${draft.title || 'untitled'}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        UI.backupBtn.addEventListener('click', () => {
+            const backup = {
+                exportDate: new Date().toISOString(),
+                drafts: state.drafts,
+            };
+            const json = JSON.stringify(backup, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `think-regularly-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // Initialize
+        function init() {
+            DraftManager.load();
+            DraftManager.loadCurrentDraft();
+            renderDraftsList();
+            UI.muteBtn.classList.toggle('active', state.isMuted);
+            UI.muteBtn.textContent = state.isMuted ? 'Sound: Off' : 'Sound: On';
+            updateWordCount();
+            updateSaveIndicator();
+        }
+
+        init();
+    </script>
+</body>
+</html>
